@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, maximum-scale=1.0">
+    <title>习惯追踪</title>
+    <style>
+        :root {
+            --done-color: #4CAF50;
+            --undone-color: #FF9800;
+            --bg: #f5f5f7;
+            --card-bg: #ffffff;
+            --text: #1d1d1f;
+            --text-secondary: #86868b;
+            --border: #e5e5ea;
+            --shadow: 0 1px 8px rgba(0, 0, 0, 0.04);
+            --today-bg: #eff6ff;
+            --today-border: #3b82f6;
+            --stripe-color: #f2f2f7;
+            --header-bg: #f9f9fb;
+            --divider: #d1d1d6;
+            --note-dot: #6366f1;
+            --accent: #5b6af0;
+            --danger: #ef4444;
+            --radius: 10px;
+            --cell-size: 28px;
+            --name-col-width: 100px;
+            --font-xs: 11px;
+            --font-sm: 12px;
+            --font-md: 13px;
+            --font-lg: 16px;
+            --bottom-nav-height: 56px;
+            --safe-bottom: env(safe-area-inset-bottom, 8px);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            height: 100%;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+            background: #f0f2f5;
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: var(--safe-bottom);
+            position: relative;
+        }
+
+        /* ========== 顶部导航栏 ========== */
+        .app-header {
+            background: var(--card-bg);
+            padding: 8px 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow);
+            flex-shrink: 0;
+            min-height: 48px;
+        }
+        .month-nav {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            justify-content: center;
+            touch-action: pan-y;
+            cursor: grab;
+            min-width: 0;
+            user-select: none;
+        }
+        .month-nav:active {
+            cursor: grabbing;
+        }
+        .month-nav-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: var(--card-bg);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            flex-shrink: 0;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .month-nav-btn:active {
+            background: #e5e7eb;
+            transform: scale(0.9);
+            border-color: #c0c5cc;
+        }
+        .month-title {
+            font-size: 16px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            color: var(--text);
+            pointer-events: none;
+            text-align: center;
+            min-width: 70px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .icon-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            border: 1.5px solid var(--border);
+            background: var(--card-bg);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            position: relative;
+        }
+        .icon-btn:active {
+            background: #e5e7eb;
+            transform: scale(0.9);
+            border-color: #c0c5cc;
+        }
+        .icon-btn.has-note-indicator::after {
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 7px;
+            height: 7px;
+            background: var(--note-dot);
+            border-radius: 50%;
+            border: 1.5px solid #fff;
+        }
+
+        /* ========== 今日进度条 ========== */
+        .today-progress-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            flex-shrink: 0;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            margin: 0;
+            flex-wrap: wrap;
+        }
+        .today-progress-bar .progress-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .today-progress-bar .progress-track {
+            flex: 1;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            min-width: 60px;
+        }
+        .today-progress-bar .progress-fill {
+            height: 100%;
+            background: var(--done-color);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+            min-width: 0;
+        }
+        .today-progress-bar .progress-num {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text);
+            white-space: nowrap;
+        }
+
+        /* ========== 图例 ========== */
+        .legend-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 14px;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+            font-size: 10px;
+            color: var(--text-secondary);
+            background: #fafbfc;
+            border-bottom: 1px solid #f0f0f5;
+        }
+        .legend-dot {
+            width: 13px;
+            height: 13px;
+            border-radius: 3px;
+            flex-shrink: 0;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .legend-dot.done {
+            background: var(--done-color);
+        }
+        .legend-dot.undone {
+            background: var(--undone-color);
+        }
+        .legend-dot.skipped {
+            background: repeating-linear-gradient(45deg, #e0e0e0, #e0e0e0 2px, #f5f5f5 2px, #f5f5f5 5px);
+        }
+        .legend-dot.pending {
+            background: #fff;
+            border: 1.5px dashed #c0c5cc;
+        }
+
+        /* ========== 主内容区域 ========== */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding-bottom: calc(var(--bottom-nav-height) + var(--safe-bottom));
+        }
+
+        /* ========== 表格容器 ========== */
+        .table-wrapper {
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 4px 4px 8px 4px;
+            scroll-behavior: smooth;
+            position: relative;
+            -webkit-overflow-scrolling: touch;
+        }
+        .table-wrapper::-webkit-scrollbar {
+            height: 3px;
+            width: 2px;
+        }
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: #c0c5cc;
+            border-radius: 2px;
+        }
+        .table-wrapper::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        /* 滚动提示阴影 */
+        .table-wrapper::before {
+            content: '';
+            position: sticky;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            background: linear-gradient(to right, rgba(0, 0, 0, 0.04), transparent);
+            z-index: 15;
+            pointer-events: none;
+            display: block;
+        }
+
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            min-width: 100%;
+            table-layout: auto;
+        }
+        table th,
+        table td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 1px;
+            height: var(--cell-size);
+            min-width: var(--cell-size);
+            width: var(--cell-size);
+            font-size: var(--font-xs);
+            position: relative;
+        }
+
+        /* 日期列头 */
+        .date-header {
+            background: var(--header-bg);
+            font-weight: 600;
+            font-size: 10px;
+            color: var(--text);
+            cursor: pointer;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--divider);
+            letter-spacing: -0.2px;
+            transition: background 0.15s;
+            padding: 3px 1px;
+            line-height: 1.1;
+            min-width: var(--cell-size);
+        }
+        .date-header.today-col {
+            background: #dbeafe !important;
+            font-weight: 800;
+            color: #1d4ed8;
+            box-shadow: inset 0 -3px 0 #3b82f6;
+            z-index: 11;
+            border-radius: 2px 2px 0 0;
+        }
+        .date-header .day-num {
+            display: block;
+            font-size: 10px;
+            line-height: 1;
+        }
+        .date-header .day-week {
+            display: block;
+            font-size: 8px;
+            color: var(--text-secondary);
+            line-height: 1;
+            margin-top: 1px;
+        }
+        .date-header.today-col .day-week {
+            color: #3b82f6;
+            font-weight: 700;
+        }
+        .date-header .note-indicator {
+            position: absolute;
+            bottom: 1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background: var(--note-dot);
+            border-radius: 50%;
+            display: none;
+        }
+        .date-header.has-note .note-indicator {
+            display: block;
+        }
+
+        /* 习惯名称列 */
+        .habit-name-col {
+            position: sticky;
+            left: 0;
+            z-index: 20;
+            background: #fdfdfd;
+            text-align: left !important;
+            padding: 0 5px 0 6px !important;
+            font-size: 10px !important;
+            font-weight: 500;
+            white-space: nowrap;
+            min-width: var(--name-col-width) !important;
+            width: var(--name-col-width) !important;
+            max-width: var(--name-col-width) !important;
+            border-right: 2px solid var(--divider);
+            letter-spacing: -0.1px;
+            line-height: 1.2;
+            cursor: default;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
+        }
+        .habit-name-col .habit-index {
+            color: var(--text-secondary);
+            font-weight: 400;
+            font-size: 8px;
+            margin-right: 1px;
+        }
+
+        /* 区域标题行 */
+        .section-header td {
+            background: #f8fafc !important;
+            font-weight: 700;
+            font-size: 10px;
+            color: #475569;
+            letter-spacing: 0.5px;
+            height: 26px;
+            border-top: 2px solid var(--divider);
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            padding-left: 8px;
+        }
+        .section-header td.habit-name-col {
+            background: #f8fafc !important;
+            z-index: 21;
+            font-size: 10px !important;
+            letter-spacing: 0.5px;
+        }
+
+        /* 打卡单元格 */
+        .check-cell {
+            cursor: pointer;
+            transition: all 0.1s ease;
+            border-radius: 3px;
+            position: relative;
+            border: 1px solid transparent;
+            min-width: var(--cell-size);
+            width: var(--cell-size);
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .check-cell:active {
+            transform: scale(0.82);
+            transition: transform 0.06s;
+        }
+        .check-cell.state-empty {
+            background: #fafbfc;
+            border-color: #e5e7eb;
+        }
+        .check-cell.state-done {
+            background: var(--done-color);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+        .check-cell.state-undone {
+            background: var(--undone-color);
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.25);
+            border-radius: 4px;
+        }
+        .check-cell.state-skip {
+            background: repeating-linear-gradient(45deg, #e8e8e8, #e8e8e8 2px, #f3f3f3 2px, #f3f3f3 5px);
+            border-color: #ddd;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        .check-cell.state-skip:active {
+            background: repeating-linear-gradient(45deg, #ddd, #ddd 2px, #e8e8e8 2px, #e8e8e8 5px);
+        }
+        .check-cell.state-planned {
+            background: #fffef9;
+            border-color: #d6d3c8;
+            border-style: dashed;
+            border-width: 1.5px;
+            border-radius: 3px;
+        }
+
+        /* 今日列高亮 */
+        td.today-col .check-cell {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+            border-radius: 4px;
+        }
+        td.today-col .check-cell.state-empty {
+            border-color: #93bbf8;
+        }
+        td.today-col .check-cell.state-done {
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.4), inset 0 1px 3px rgba(255, 255, 255, 0.3);
+        }
+
+        /* 统计行 */
+        .stats-row td {
+            background: #fefefe;
+            font-weight: 700;
+            font-size: 10px;
+            color: #374151;
+            border-top: 2px solid #9ca3af;
+            height: 28px;
+            padding: 2px 0;
+        }
+        .stats-row td.habit-name-col {
+            background: #fefefe;
+            z-index: 20;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        .stats-total-row td {
+            background: #f0fdf4;
+            font-weight: 800;
+            font-size: 11px;
+            color: #166534;
+            border-top: 2px solid #6b7280;
+            height: 30px;
+        }
+        .stats-total-row td.habit-name-col {
+            background: #f0fdf4;
+            z-index: 20;
+            font-weight: 800;
+            color: #166534;
+        }
+
+        /* ========== 底部导航栏 ========== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            padding: 6px 8px var(--safe-bottom);
+            z-index: 150;
+            box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+            height: calc(var(--bottom-nav-height) + var(--safe-bottom));
+            gap: 4px;
+        }
+        .bottom-nav-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #86868b;
+            font-size: 10px;
+            font-weight: 500;
+            padding: 6px 4px;
+            border-radius: 10px;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            max-width: 80px;
+            font-family: inherit;
+        }
+        .bottom-nav-btn:active {
+            background: #f3f4f6;
+            transform: scale(0.93);
+            color: var(--accent);
+        }
+        .bottom-nav-btn .nav-icon {
+            font-size: 20px;
+            line-height: 1;
+            transition: transform 0.15s;
+        }
+        .bottom-nav-btn:active .nav-icon {
+            transform: scale(0.9);
+        }
+        .bottom-nav-btn.active {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* ========== 备注弹窗 ========== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 200;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            animation: fadeIn 0.2s ease;
+            padding-bottom: var(--safe-bottom);
+        }
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .modal-dialog {
+            background: #fff;
+            border-radius: 16px 16px 0 0;
+            padding: 20px 16px 20px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.2);
+            animation: slideUp 0.25s ease;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+        }
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .modal-dialog h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+            color: #1f2937;
+            flex-shrink: 0;
+        }
+        .modal-dialog .modal-date-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 10px;
+            flex-shrink: 0;
+        }
+        .modal-dialog textarea {
+            width: 100%;
+            height: 70px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 14px;
+            resize: vertical;
+            font-family: inherit;
+            -webkit-user-select: text;
+            user-select: text;
+            outline: none;
+            transition: border-color 0.15s;
+            flex-shrink: 0;
+        }
+        .modal-dialog textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(91, 106, 240, 0.06);
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+        .modal-buttons button {
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            font-family: inherit;
+        }
+        .modal-buttons .btn-save {
+            background: var(--accent);
+            color: #fff;
+            flex: 1;
+            min-width: 80px;
+        }
+        .modal-buttons .btn-save:active {
+            background: #4a56d4;
+            transform: scale(0.95);
+        }
+        .modal-buttons .btn-cancel {
+            background: #f3f4f6;
+            color: #374151;
+        }
+        .modal-buttons .btn-cancel:active {
+            background: #e5e7eb;
+            transform: scale(0.95);
+        }
+        .modal-buttons .btn-delete {
+            background: #fef2f2;
+            color: #dc2626;
+            font-size: 12px;
+            padding: 10px 14px;
+        }
+        .modal-buttons .btn-delete:active {
+            background: #fde8e8;
+            transform: scale(0.95);
+        }
+
+        /* ========== 设置面板 - 底部弹出 ========== */
+        .settings-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.45);
+            z-index: 299;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .settings-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .settings-panel {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            max-width: 100%;
+            max-height: 85vh;
+            background: #fff;
+            z-index: 300;
+            box-shadow: 0 -5px 30px rgba(0, 0, 0, 0.2);
+            transform: translateY(105%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-radius: 18px 18px 0 0;
+        }
+        .settings-panel.open {
+            transform: translateY(0);
+        }
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            background: #fafbfc;
+            border-radius: 18px 18px 0 0;
+        }
+        .settings-header h2 {
+            font-size: 17px;
+            font-weight: 700;
+        }
+        .settings-header .close-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            background: #f3f4f6;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            font-family: inherit;
+        }
+        .settings-header .close-btn:active {
+            background: #e5e7eb;
+            transform: scale(0.9);
+        }
+        .settings-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 14px 16px 20px;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: calc(20px + var(--safe-bottom));
+        }
+        .settings-body::-webkit-scrollbar {
+            width: 3px;
+        }
+        .settings-body::-webkit-scrollbar-thumb {
+            background: #c0c5cc;
+            border-radius: 3px;
+        }
+        .settings-section {
+            margin-bottom: 16px;
+        }
+        .settings-section h3 {
+            font-size: 12px;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 8px;
+        }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            gap: 10px;
+        }
+        .setting-row label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #374151;
+            flex-shrink: 0;
+        }
+        .setting-row input[type="color"] {
+            width: 38px;
+            height: 32px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 2px;
+            background: #fff;
+        }
+        .habit-edit-list {
+            list-style: none;
+            padding: 0;
+        }
+        .habit-edit-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f3f4f6;
+            flex-wrap: wrap;
+        }
+        .habit-edit-item input[type="text"] {
+            flex: 1;
+            min-width: 90px;
+            padding: 8px 10px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 12px;
+            font-family: inherit;
+            -webkit-user-select: text;
+            user-select: text;
+            outline: none;
+        }
+        .habit-edit-item input[type="text"]:focus {
+            border-color: var(--accent);
+        }
+        .habit-edit-item select {
+            padding: 7px 6px;
+            border: 1.5px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 10px;
+            background: #fff;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .habit-edit-item .tag {
+            font-size: 9px;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .tag-daily {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+        .tag-periodic {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .btn-sm {
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1.5px solid #d1d5db;
+            background: #fff;
+            font-size: 10px;
+            cursor: pointer;
+            font-weight: 500;
+            white-space: nowrap;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            transition: all 0.12s;
+            font-family: inherit;
+        }
+        .btn-sm:active {
+            background: #e5e7eb;
+            transform: scale(0.92);
+        }
+        .btn-sm.danger {
+            border-color: #fca5a5;
+            color: #dc2626;
+            background: #fef2f2;
+        }
+        .btn-sm.danger:active {
+            background: #fde8e8;
+        }
+        .btn-add-habit {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border: 2px dashed #c0c5cc;
+            border-radius: 10px;
+            background: #fafbfc;
+            font-size: 13px;
+            cursor: pointer;
+            color: #6b7280;
+            font-weight: 600;
+            margin-top: 8px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .btn-add-habit:active {
+            background: #e5e7eb;
+            border-color: #9ca3af;
+        }
+        .btn-reset {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border: 1.5px solid #fca5a5;
+            border-radius: 10px;
+            background: #fef2f2;
+            font-size: 12px;
+            cursor: pointer;
+            color: #dc2626;
+            font-weight: 600;
+            margin-top: 6px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .btn-reset:active {
+            background: #fde8e8;
+        }
+
+        /* ========== Toast ========== */
+        .toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: #fff;
+            padding: 10px 22px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 400;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ========== 响应式微调 ========== */
+        @media (max-width: 350px) {
+            :root {
+                --cell-size: 22px;
+                --name-col-width: 78px;
+                --font-xs: 9px;
+            }
+            .habit-name-col {
+                font-size: 9px !important;
+                padding: 0 3px 0 4px !important;
+            }
+            .date-header {
+                font-size: 9px;
+            }
+            .date-header .day-week {
+                font-size: 7px;
+            }
+            .month-title {
+                font-size: 14px;
+            }
+            .legend-bar {
+                gap: 4px;
+                font-size: 9px;
+                padding: 3px 6px;
+            }
+            .legend-dot {
+                width: 10px;
+                height: 10px;
+            }
+            .icon-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+            .month-nav-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+            .bottom-nav-btn {
+                font-size: 9px;
+            }
+            .bottom-nav-btn .nav-icon {
+                font-size: 18px;
+            }
+        }
+        @media (min-width: 420px) {
+            :root {
+                --cell-size: 32px;
+                --name-col-width: 115px;
+                --font-xs: 12px;
+            }
+            .habit-name-col {
+                font-size: 11px !important;
+            }
+            .date-header {
+                font-size: 11px;
+            }
+            .date-header .day-week {
+                font-size: 9px;
+            }
+            .month-title {
+                font-size: 17px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== 顶部导航 ==================== -->
+    <header class="app-header">
+        <button class="icon-btn" id="btnToday" title="回到今日" aria-label="回到今日">📍</button>
+        <div class="month-nav" id="monthNav">
+            <button class="month-nav-btn" id="btnPrevMonth" aria-label="上个月">◀</button>
+            <span class="month-title" id="monthTitle">2026年5月</span>
+            <button class="month-nav-btn" id="btnNextMonth" aria-label="下个月">▶</button>
+        </div>
+        <button class="icon-btn" id="btnSettings" title="设置" aria-label="设置">⚙️</button>
+    </header>
+
+    <!-- ==================== 今日进度条 ==================== -->
+    <div class="today-progress-bar" id="todayProgressBar">
+        <span class="progress-label">📅 今日</span>
+        <div class="progress-track">
+            <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+        </div>
+        <span class="progress-num" id="progressNum">0/0</span>
+    </div>
+
+    <!-- ==================== 图例 ==================== -->
+    <div class="legend-bar">
+        <span style="font-weight:600;">图例：</span>
+        <span class="legend-dot pending"></span> 待打卡
+        <span class="legend-dot done"></span> 已完成
+        <span class="legend-dot undone"></span> 未完成
+        <span class="legend-dot skipped"></span> 非计划日
+    </div>
+
+    <!-- ==================== 主内容 ==================== -->
+    <div class="main-content">
+        <div class="table-wrapper" id="tableWrapper">
+            <table id="habitTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+                <tfoot id="tableFoot"></tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- ==================== 底部导航栏 ==================== -->
+    <nav class="bottom-nav">
+        <button class="bottom-nav-btn active" id="bottomBtnToday" title="今日">
+            <span class="nav-icon">📍</span>
+            <span>今日</span>
+        </button>
+        <button class="bottom-nav-btn" id="bottomBtnStats" title="统计">
+            <span class="nav-icon">📊</span>
+            <span>统计</span>
+        </button>
+        <button class="bottom-nav-btn" id="bottomBtnNote" title="备注">
+            <span class="nav-icon">📝</span>
+            <span>备注</span>
+        </button>
+        <button class="bottom-nav-btn" id="bottomBtnSettings" title="设置">
+            <span class="nav-icon">⚙️</span>
+            <span>设置</span>
+        </button>
+    </nav>
+
+    <!-- ==================== 备注弹窗 ==================== -->
+    <div class="modal-overlay" id="noteModal" style="display:none;">
+        <div class="modal-dialog">
+            <h3>📝 每日备注</h3>
+            <div class="modal-date-label" id="noteDateLabel"></div>
+            <textarea id="noteTextarea" placeholder="记录心情或原因..."></textarea>
+            <div class="modal-buttons">
+                <button class="btn-delete" id="btnDeleteNote" style="display:none;">删除备注</button>
+                <button class="btn-cancel" id="btnCancelNote">取消</button>
+                <button class="btn-save" id="btnSaveNote">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 设置面板 ==================== -->
+    <div class="settings-backdrop" id="settingsBackdrop"></div>
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-header">
+            <h2>⚙️ 设置</h2>
+            <button class="close-btn" id="btnCloseSettings">✕</button>
+        </div>
+        <div class="settings-body">
+            <div class="settings-section">
+                <h3>🎨 颜色设置</h3>
+                <div class="setting-row">
+                    <label>✅ 完成颜色</label>
+                    <input type="color" id="colorDone" value="#4CAF50">
+                </div>
+                <div class="setting-row">
+                    <label>⚠️ 未完成颜色</label>
+                    <input type="color" id="colorUndone" value="#FF9800">
+                </div>
+            </div>
+            <div class="settings-section">
+                <h3>📋 习惯列表编辑</h3>
+                <p style="font-size:10px;color:#6b7280;margin-bottom:6px;">可修改名称、调整类型。使用按钮调整顺序。</p>
+                <ul class="habit-edit-list" id="habitEditList"></ul>
+                <button class="btn-add-habit" id="btnAddHabit">+ 添加新习惯</button>
+            </div>
+            <!-- ====== 数据管理（已整合导出/导入功能） ====== -->
+            <div class="settings-section">
+                <h3>⚠️ 数据管理</h3>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+                    <button class="btn-sm" id="btnExportData" style="flex:1;background:#e8f5e9;border-color:#66bb6a;">📤 导出数据</button>
+                    <button class="btn-sm" id="btnImportData" style="flex:1;background:#fff3e0;border-color:#ffa726;">📥 导入数据</button>
+                </div>
+                <input type="file" id="fileInput" accept=".json" style="display:none;">
+                <button class="btn-reset" id="btnResetData">⚠️ 恢复默认设置（清除所有数据）</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== Toast ==================== -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            // ==================== 常量 ====================
+            const STORAGE_KEY = 'habitTrackerData_v3';
+            const LONG_PRESS_MS = 500;
+            const SWIPE_THRESHOLD = 40;
+
+            // ==================== DOM引用 ====================
+            const $tableHead = document.getElementById('tableHead');
+            const $tableBody = document.getElementById('tableBody');
+            const $tableFoot = document.getElementById('tableFoot');
+            const $tableWrapper = document.getElementById('tableWrapper');
+            const $monthTitle = document.getElementById('monthTitle');
+            const $monthNav = document.getElementById('monthNav');
+            const $btnPrevMonth = document.getElementById('btnPrevMonth');
+            const $btnNextMonth = document.getElementById('btnNextMonth');
+            const $btnToday = document.getElementById('btnToday');
+            const $btnSettings = document.getElementById('btnSettings');
+            const $settingsPanel = document.getElementById('settingsPanel');
+            const $settingsBackdrop = document.getElementById('settingsBackdrop');
+            const $btnCloseSettings = document.getElementById('btnCloseSettings');
+            const $colorDone = document.getElementById('colorDone');
+            const $colorUndone = document.getElementById('colorUndone');
+            const $habitEditList = document.getElementById('habitEditList');
+            const $btnAddHabit = document.getElementById('btnAddHabit');
+            const $btnResetData = document.getElementById('btnResetData');
+            const $noteModal = document.getElementById('noteModal');
+            const $noteDateLabel = document.getElementById('noteDateLabel');
+            const $noteTextarea = document.getElementById('noteTextarea');
+            const $btnSaveNote = document.getElementById('btnSaveNote');
+            const $btnCancelNote = document.getElementById('btnCancelNote');
+            const $btnDeleteNote = document.getElementById('btnDeleteNote');
+            const $toast = document.getElementById('toast');
+            const $progressFill = document.getElementById('progressFill');
+            const $progressNum = document.getElementById('progressNum');
+            const $todayProgressBar = document.getElementById('todayProgressBar');
+            const $bottomBtnToday = document.getElementById('bottomBtnToday');
+            const $bottomBtnStats = document.getElementById('bottomBtnStats');
+            const $bottomBtnNote = document.getElementById('bottomBtnNote');
+            const $bottomBtnSettings = document.getElementById('bottomBtnSettings');
+
+            // ==================== 默认数据 ====================
+            const defaultHabits = [
+                { id: 'd1', name: '规律三餐 & 喝够水', type: 'daily', order: 1 },
+                { id: 'd2', name: '护肤防晒刷牙（早晚）', type: 'daily', order: 2 },
+                { id: 'd3', name: '中午散步', type: 'daily', order: 3 },
+                { id: 'd4', name: '每天一条行动清单', type: 'daily', order: 4 },
+                { id: 'd5', name: '体态', type: 'daily', order: 5 },
+                { id: 'd6', name: '锻炼运动', type: 'daily', order: 6 },
+                { id: 'd7', name: '按摩', type: 'daily', order: 7 },
+                { id: 'd8', name: '技能练习（笛子/画画）', type: 'daily', order: 8 },
+                { id: 'd9', name: '阅读30分钟', type: 'daily', order: 9 },
+                { id: 'd10', name: '输出一段话', type: 'daily', order: 10 },
+                { id: 'd11', name: '梳头100下', type: 'daily', order: 11 },
+                { id: 'd12', name: '22:00睡', type: 'daily', order: 12 },
+                { id: 'p1', name: '敷面膜', type: 'periodic', defaultScheduled: false, order: 13 },
+                { id: 'p2', name: '贴鼻贴', type: 'periodic', defaultScheduled: false, order: 14 },
+                { id: 'p3', name: '听播客', type: 'periodic', defaultScheduled: true, order: 15 },
+            ];
+
+            function getDefaultData() {
+                return {
+                    habits: JSON.parse(JSON.stringify(defaultHabits)),
+                    records: {},
+                    scheduledDays: {},
+                    notes: {},
+                    settings: {
+                        doneColor: '#4CAF50',
+                        undoneColor: '#FF9800',
+                    },
+                };
+            }
+
+            // ==================== 应用状态 ====================
+            let appData = null;
+            let currentYear, currentMonth;
+            let todayStr;
+            let noteModalDate = null;
+
+            // ==================== 数据管理 ====================
+            function loadData() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        const parsed = JSON.parse(raw);
+                        const def = getDefaultData();
+                        appData = {
+                            habits: parsed.habits || def.habits,
+                            records: parsed.records || {},
+                            scheduledDays: parsed.scheduledDays || {},
+                            notes: parsed.notes || {},
+                            settings: parsed.settings || def.settings,
+                        };
+                        if (!appData.settings.doneColor) appData.settings.doneColor = def.settings.doneColor;
+                        if (!appData.settings.undoneColor) appData.settings.undoneColor = def.settings.undoneColor;
+                    } else {
+                        appData = getDefaultData();
+                    }
+                } catch (e) {
+                    appData = getDefaultData();
+                }
+                applyColors();
+            }
+
+            function saveData() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+                } catch (e) {
+                    showToast('存储空间不足，请清理数据');
+                }
+            }
+
+            function resetData() {
+                if (confirm('确定要恢复默认设置并清除所有打卡记录吗？此操作不可撤销！')) {
+                    appData = getDefaultData();
+                    saveData();
+                    applyColors();
+                    renderAll();
+                    showToast('已恢复默认设置');
+                }
+            }
+
+            // ====== 导出 / 导入功能 ======
+            function exportData() {
+                try {
+                    const dataStr = JSON.stringify(appData, null, 2);
+                    const blob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    const now = new Date();
+                    const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+                    a.download = `habit_backup_${dateStr}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    showToast('✅ 数据已导出');
+                } catch (e) {
+                    showToast('❌ 导出失败：' + e.message);
+                }
+            }
+
+            function importData() {
+                document.getElementById('fileInput').click();
+            }
+
+            function handleFileImport(file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const imported = JSON.parse(e.target.result);
+                        // 基本校验
+                        if (!imported.habits || !imported.records) {
+                            showToast('❌ 无效的数据文件');
+                            return;
+                        }
+                        if (!confirm('导入将覆盖当前所有数据，确定继续吗？')) return;
+                        // 备份当前数据（防止导入失败）
+                        const backup = JSON.parse(JSON.stringify(appData));
+                        try {
+                            appData.habits = imported.habits;
+                            appData.records = imported.records;
+                            appData.scheduledDays = imported.scheduledDays || {};
+                            appData.notes = imported.notes || {};
+                            appData.settings = imported.settings || appData.settings;
+                            saveData();
+                            applyColors();
+                            renderAll();
+                            showToast('✅ 数据导入成功！');
+                        } catch (err) {
+                            // 导入失败时恢复备份
+                            appData = backup;
+                            saveData();
+                            renderAll();
+                            showToast('❌ 导入失败，已恢复原数据');
+                        }
+                    } catch (err) {
+                        showToast('❌ 文件解析失败，请确保是有效的 JSON 文件');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            function applyColors() {
+                const s = appData.settings;
+                document.documentElement.style.setProperty('--done-color', s.doneColor);
+                document.documentElement.style.setProperty('--undone-color', s.undoneColor);
+                $colorDone.value = s.doneColor;
+                $colorUndone.value = s.undoneColor;
+            }
+
+            // ==================== 日期工具 ====================
+            function getTodayStr() {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            }
+
+            function getDaysInMonth(year, month) {
+                return new Date(year, month, 0).getDate();
+            }
+
+            function getDateStr(year, month, day) {
+                return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            }
+
+            function getDayOfWeek(year, month, day) {
+                const d = new Date(year, month - 1, day);
+                const days = ['日', '一', '二', '三', '四', '五', '六'];
+                return days[d.getDay()];
+            }
+
+            // ==================== 习惯相关 ====================
+            function getDailyHabits() {
+                return appData.habits.filter(h => h.type === 'daily').sort((a, b) => a.order - b.order);
+            }
+
+            function getPeriodicHabits() {
+                return appData.habits.filter(h => h.type === 'periodic').sort((a, b) => a.order - b.order);
+            }
+
+            function getAllHabitsSorted() {
+                return [...getDailyHabits(), ...getPeriodicHabits()];
+            }
+
+            function isPeriodicScheduled(habit, dateStr) {
+                if (habit.type !== 'periodic') return true;
+                if (habit.defaultScheduled) return true;
+                const sd = appData.scheduledDays[dateStr];
+                return sd && sd.includes(habit.id);
+            }
+
+            function setPeriodicScheduled(habitId, dateStr, scheduled) {
+                if (!appData.scheduledDays[dateStr]) {
+                    appData.scheduledDays[dateStr] = [];
+                }
+                if (scheduled) {
+                    if (!appData.scheduledDays[dateStr].includes(habitId)) {
+                        appData.scheduledDays[dateStr].push(habitId);
+                    }
+                } else {
+                    appData.scheduledDays[dateStr] = appData.scheduledDays[dateStr].filter(id => id !== habitId);
+                    if (appData.scheduledDays[dateStr].length === 0) {
+                        delete appData.scheduledDays[dateStr];
+                    }
+                }
+            }
+
+            function getCellState(habit, dateStr) {
+                const record = appData.records[dateStr];
+                const status = record ? (record[habit.id] || '') : '';
+                if (status === 'done') return 'done';
+                if (status === 'undone') return 'undone';
+                if (habit.type === 'periodic' && !isPeriodicScheduled(habit, dateStr)) {
+                    return 'skip';
+                }
+                if (habit.type === 'periodic' && isPeriodicScheduled(habit, dateStr) && !habit.defaultScheduled) {
+                    return 'planned';
+                }
+                return 'empty';
+            }
+
+            function cycleCellState(habit, dateStr) {
+                const currentState = getCellState(habit, dateStr);
+                if (habit.type === 'daily') {
+                    const transitions = {
+                        'empty': 'done',
+                        'done': 'undone',
+                        'undone': 'empty',
+                    };
+                    const newState = transitions[currentState] || 'empty';
+                    applyState(habit, dateStr, newState);
+                } else {
+                    if (habit.defaultScheduled) {
+                        const transitions = {
+                            'empty': 'done',
+                            'done': 'undone',
+                            'undone': 'empty',
+                            'skip': 'planned',
+                            'planned': 'done',
+                        };
+                        const newState = transitions[currentState] || 'empty';
+                        applyState(habit, dateStr, newState);
+                    } else {
+                        const transitions = {
+                            'skip': 'planned',
+                            'planned': 'done',
+                            'done': 'undone',
+                            'undone': 'skip',
+                            'empty': 'planned',
+                        };
+                        const newState = transitions[currentState] || 'skip';
+                        if (newState === 'skip') {
+                            setPeriodicScheduled(habit.id, dateStr, false);
+                            clearRecord(habit.id, dateStr);
+                        } else if (newState === 'planned') {
+                            setPeriodicScheduled(habit.id, dateStr, true);
+                            clearRecord(habit.id, dateStr);
+                        } else {
+                            if (!isPeriodicScheduled(habit, dateStr)) {
+                                setPeriodicScheduled(habit.id, dateStr, true);
+                            }
+                            applyState(habit, dateStr, newState);
+                        }
+                        saveData();
+                        renderAll();
+                        return;
+                    }
+                }
+                saveData();
+                renderAll();
+            }
+
+            function applyState(habit, dateStr, state) {
+                if (!appData.records[dateStr]) {
+                    appData.records[dateStr] = {};
+                }
+                if (state === 'empty' || state === 'planned' || state === 'skip') {
+                    delete appData.records[dateStr][habit.id];
+                    if (Object.keys(appData.records[dateStr]).length === 0) {
+                        delete appData.records[dateStr];
+                    }
+                } else {
+                    appData.records[dateStr][habit.id] = state;
+                }
+            }
+
+            function clearRecord(habitId, dateStr) {
+                if (appData.records[dateStr]) {
+                    delete appData.records[dateStr][habitId];
+                    if (Object.keys(appData.records[dateStr]).length === 0) {
+                        delete appData.records[dateStr];
+                    }
+                }
+            }
+
+            function countDoneForHabit(habit, year, month) {
+                const daysInMonth = getDaysInMonth(year, month);
+                let count = 0;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = getDateStr(year, month, d);
+                    const state = getCellState(habit, dateStr);
+                    if (state === 'done') count++;
+                }
+                return count;
+            }
+
+            function countTotalDone(year, month) {
+                const allHabits = getAllHabitsSorted();
+                const daysInMonth = getDaysInMonth(year, month);
+                let total = 0;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = getDateStr(year, month, d);
+                    for (const habit of allHabits) {
+                        const state = getCellState(habit, dateStr);
+                        if (state === 'done') total++;
+                    }
+                }
+                return total;
+            }
+
+            function countTodayProgress() {
+                const todayStrActual = getTodayStr();
+                const allHabits = getAllHabitsSorted();
+                let totalApplicable = 0;
+                let totalDone = 0;
+                for (const habit of allHabits) {
+                    const state = getCellState(habit, todayStrActual);
+                    if (state !== 'skip') {
+                        totalApplicable++;
+                        if (state === 'done') totalDone++;
+                    }
+                }
+                return { done: totalDone, total: totalApplicable };
+            }
+
+            function updateTodayProgress() {
+                const progress = countTodayProgress();
+                const pct = progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
+                $progressFill.style.width = pct + '%';
+                $progressNum.textContent = progress.done + '/' + progress.total;
+                if (progress.done === progress.total && progress.total > 0) {
+                    $progressFill.style.background = '#4CAF50';
+                } else if (progress.done > 0) {
+                    $progressFill.style.background = 'var(--done-color)';
+                } else {
+                    $progressFill.style.background = '#d1d5db';
+                }
+                const todayStrActual = getTodayStr();
+                const hasTodayNote = !!appData.notes[todayStrActual];
+                const $bottomNoteBtn = document.getElementById('bottomBtnNote');
+                if ($bottomNoteBtn) {
+                    $bottomNoteBtn.querySelector('.nav-icon').textContent = hasTodayNote ? '📝✅' : '📝';
+                }
+            }
+
+            // ==================== 渲染 ====================
+            function renderAll() {
+                const year = currentYear;
+                const month = currentMonth;
+                const daysInMonth = getDaysInMonth(year, month);
+                const todayStrActual = getTodayStr();
+                todayStr = todayStrActual;
+                $monthTitle.textContent = `${year}年${month}月`;
+                document.title = `习惯追踪 - ${year}年${month}月`;
+                const dailyHabits = getDailyHabits();
+                const periodicHabits = getPeriodicHabits();
+                const allHabits = [...dailyHabits, ...periodicHabits];
+                const now = new Date();
+                const isCurrentMonth = (year === now.getFullYear() && month === now.getMonth() + 1);
+                const todayDay = now.getDate();
+
+                // ========== 表头 ==========
+                let headHTML = '<tr>';
+                headHTML +=
+                    '<th class="habit-name-col" style="position:sticky;left:0;z-index:25;background:var(--header-bg);min-width:var(--name-col-width);width:var(--name-col-width);border-right:2px solid var(--divider);text-align:center;font-size:var(--font-xs);">习惯</th>';
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = getDateStr(year, month, d);
+                    const isToday = isCurrentMonth && d === todayDay;
+                    const dayWeek = getDayOfWeek(year, month, d);
+                    const hasNote = !!appData.notes[dateStr];
+                    let cls = 'date-header';
+                    if (isToday) cls += ' today-col';
+                    if (hasNote) cls += ' has-note';
+                    headHTML +=
+                        `<th class="${cls}" data-date="${dateStr}" title="长按添加备注">${d}<span class="day-week">${dayWeek}</span><span class="note-indicator"></span></th>`;
+                }
+                headHTML += '</tr>';
+                $tableHead.innerHTML = headHTML;
+
+                // ========== 表体 ==========
+                let bodyHTML = '';
+                bodyHTML += '<tr class="section-header">';
+                bodyHTML +=
+                    `<td class="habit-name-col" style="text-align:left;padding-left:8px;">📌 每日必做 <span style="font-weight:400;color:#9ca3af;font-size:9px;">(${dailyHabits.length}项)</span></td>`;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    bodyHTML += '<td style="background:#f8fafc;"></td>';
+                }
+                bodyHTML += '</tr>';
+
+                dailyHabits.forEach((habit, idx) => {
+                    bodyHTML += '<tr>';
+                    bodyHTML +=
+                        `<td class="habit-name-col"><span class="habit-index">${idx+1}.</span> ${escapeHTML(habit.name)}</td>`;
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const dateStr = getDateStr(year, month, d);
+                        const state = getCellState(habit, dateStr);
+                        const isToday = isCurrentMonth && d === todayDay;
+                        bodyHTML +=
+                            `<td class="${isToday ? 'today-col' : ''}" style="padding:1px;"><div class="check-cell state-${state}" data-habit-id="${habit.id}" data-date="${dateStr}" data-state="${state}"></div></td>`;
+                    }
+                    bodyHTML += '</tr>';
+                });
+
+                bodyHTML += '<tr class="section-header">';
+                bodyHTML +=
+                    `<td class="habit-name-col" style="text-align:left;padding-left:8px;">🔄 周期弹性 <span style="font-weight:400;color:#9ca3af;font-size:9px;">(${periodicHabits.length}项 · 点击灰格设为计划日)</span></td>`;
+                for (let d = 1; d <= daysInMonth; d++) {
+                    bodyHTML += '<td style="background:#f8fafc;"></td>';
+                }
+                bodyHTML += '</tr>';
+
+                periodicHabits.forEach((habit, idx) => {
+                    bodyHTML += '<tr>';
+                    bodyHTML +=
+                        `<td class="habit-name-col"><span class="habit-index">${idx+1}.</span> ${escapeHTML(habit.name)}${habit.defaultScheduled ? ' <span style="font-size:8px;color:#6b7280;">(任意)</span>' : ''}</td>`;
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        const dateStr = getDateStr(year, month, d);
+                        const state = getCellState(habit, dateStr);
+                        const isToday = isCurrentMonth && d === todayDay;
+                        bodyHTML +=
+                            `<td class="${isToday ? 'today-col' : ''}" style="padding:1px;"><div class="check-cell state-${state}" data-habit-id="${habit.id}" data-date="${dateStr}" data-state="${state}"></div></td>`;
+                    }
+                    bodyHTML += '</tr>';
+                });
+
+                bodyHTML += '<tr class="stats-row">';
+                bodyHTML += '<td class="habit-name-col">📊 完成天数</td>';
+                for (let d = 1; d <= daysInMonth; d++) {
+                    bodyHTML += '<td></td>';
+                }
+                bodyHTML += '</tr>';
+
+                allHabits.forEach(habit => {
+                    const doneCount = countDoneForHabit(habit, year, month);
+                    bodyHTML += '<tr class="stats-row" style="font-weight:500;font-size:9px;color:#6b7280;">';
+                    bodyHTML +=
+                        `<td class="habit-name-col" style="font-weight:500;font-size:9px;color:#6b7280;"> ↳ ${escapeHTML(habit.name.length > 10 ? habit.name.slice(0,10)+'…' : habit.name)}</td>`;
+                    for (let d = 1; d <= daysInMonth; d++) {
+                        bodyHTML +=
+                            `<td style="font-size:9px;color:#9ca3af;">${d === 1 ? doneCount : ''}</td>`;
+                    }
+                    bodyHTML += '</tr>';
+                });
+
+                $tableBody.innerHTML = bodyHTML;
+
+                const totalDone = countTotalDone(year, month);
+                let footHTML = '<tr class="stats-total-row">';
+                footHTML += '<td class="habit-name-col">✅ 本月总计</td>';
+                for (let d = 1; d <= daysInMonth; d++) {
+                    footHTML +=
+                        `<td style="font-size:var(--font-sm);">${d === 1 ? totalDone + ' 次' : ''}</td>`;
+                }
+                footHTML += '</tr>';
+                $tableFoot.innerHTML = footHTML;
+
+                renderHabitEditList();
+                updateTodayProgress();
+
+                if (isCurrentMonth && todayDay <= daysInMonth) {
+                    setTimeout(() => {
+                        scrollToToday();
+                    }, 200);
+                }
+            }
+
+            function scrollToToday() {
+                const todayHeader = $tableHead.querySelector('.today-col');
+                if (todayHeader && $tableWrapper) {
+                    const wrapperRect = $tableWrapper.getBoundingClientRect();
+                    const headerRect = todayHeader.getBoundingClientRect();
+                    const scrollLeft = $tableWrapper.scrollLeft + headerRect.left - wrapperRect.left - (
+                        wrapperRect.width / 3);
+                    $tableWrapper.scrollTo({
+                        left: Math.max(0, scrollLeft),
+                        behavior: 'smooth',
+                    });
+                }
+            }
+
+            function scrollToStats() {
+                const statsRow = $tableFoot.querySelector('.stats-total-row');
+                if (statsRow && $tableWrapper) {
+                    statsRow.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                } else if ($tableWrapper) {
+                    $tableWrapper.scrollTo({
+                        top: $tableWrapper.scrollHeight,
+                        behavior: 'smooth',
+                    });
+                }
+                showToast('已滚动到统计区域');
+            }
+
+            function renderHabitEditList() {
+                const allHabits = getAllHabitsSorted();
+                let html = '';
+                allHabits.forEach((habit, idx) => {
+                    const tagCls = habit.type === 'daily' ? 'tag-daily' : 'tag-periodic';
+                    html += `
+                <li class="habit-edit-item" data-habit-id="${habit.id}">
+                  <span style="font-size:9px;color:#9ca3af;width:14px;text-align:center;">${idx+1}</span>
+                  <input type="text" value="${escapeHTML(habit.name)}" data-field="name" style="flex:2;min-width:80px;">
+                  <select data-field="type" style="flex-shrink:0;">
+                    <option value="daily" ${habit.type==='daily'?'selected':''}>每日必做</option>
+                    <option value="periodic" ${habit.type==='periodic'?'selected':''}>周期弹性</option>
+                  </select>
+                  ${habit.type==='periodic' ? `
+                    <label style="font-size:9px;display:flex;align-items:center;gap:2px;white-space:nowrap;">
+                      <input type="checkbox" data-field="defaultScheduled" ${habit.defaultScheduled?'checked':''}> 默认计划日
+                    </label>` : '<span style="width:65px;"></span>'}
+                  <button class="btn-sm" data-action="moveUp" ${idx===0?'disabled':''}>↑</button>
+                  <button class="btn-sm" data-action="moveDown" ${idx===allHabits.length-1?'disabled':''}>↓</button>
+                  <button class="btn-sm danger" data-action="delete">✕</button>
+                </li>`;
+                });
+                $habitEditList.innerHTML = html;
+
+                $habitEditList.querySelectorAll('.habit-edit-item').forEach(item => {
+                    const habitId = item.dataset.habitId;
+                    const nameInput = item.querySelector('[data-field="name"]');
+                    const typeSelect = item.querySelector('[data-field="type"]');
+                    const defaultScheduledCheck = item.querySelector(
+                    '[data-field="defaultScheduled"]');
+                    const btnUp = item.querySelector('[data-action="moveUp"]');
+                    const btnDown = item.querySelector('[data-action="moveDown"]');
+                    const btnDel = item.querySelector('[data-action="delete"]');
+
+                    nameInput.addEventListener('change', () => {
+                        updateHabitInSettings(habitId, { name: nameInput.value.trim() ||
+                                '未命名习惯' });
+                    });
+                    typeSelect.addEventListener('change', () => {
+                        updateHabitInSettings(habitId, {
+                            type: typeSelect.value,
+                            defaultScheduled: typeSelect.value === 'periodic' ? (
+                                defaultScheduledCheck ? defaultScheduledCheck
+                                .checked : false) : undefined,
+                        });
+                        renderHabitEditList();
+                    });
+                    if (defaultScheduledCheck) {
+                        defaultScheduledCheck.addEventListener('change', () => {
+                            updateHabitInSettings(habitId, { defaultScheduled:
+                                    defaultScheduledCheck.checked });
+                        });
+                    }
+                    btnUp.addEventListener('click', () => moveHabitOrder(habitId, -1));
+                    btnDown.addEventListener('click', () => moveHabitOrder(habitId, 1));
+                    btnDel.addEventListener('click', () => {
+                        if (confirm('确定删除该习惯吗？相关打卡记录将保留但不再显示。')) {
+                            deleteHabit(habitId);
+                        }
+                    });
+                });
+            }
+
+            function updateHabitInSettings(habitId, updates) {
+                const habit = appData.habits.find(h => h.id === habitId);
+                if (!habit) return;
+                Object.assign(habit, updates);
+                if (updates.type === 'daily') {
+                    delete habit.defaultScheduled;
+                }
+                saveData();
+                renderAll();
+            }
+
+            function moveHabitOrder(habitId, delta) {
+                const allSorted = getAllHabitsSorted();
+                const idx = allSorted.findIndex(h => h.id === habitId);
+                if (idx < 0) return;
+                const newIdx = idx + delta;
+                if (newIdx < 0 || newIdx >= allSorted.length) return;
+                const temp = allSorted[idx].order;
+                allSorted[idx].order = allSorted[newIdx].order;
+                allSorted[newIdx].order = temp;
+                saveData();
+                renderAll();
+                renderHabitEditList();
+            }
+
+            function deleteHabit(habitId) {
+                appData.habits = appData.habits.filter(h => h.id !== habitId);
+                const allSorted = getAllHabitsSorted();
+                allSorted.forEach((h, i) => { h.order = i + 1; });
+                saveData();
+                renderAll();
+                renderHabitEditList();
+            }
+
+            function addNewHabit() {
+                const name = prompt('请输入新习惯名称：');
+                if (!name || !name.trim()) return;
+                const type = confirm('点击"确定"设为【每日必做】，点击"取消"设为【周期弹性】') ? 'daily' : 'periodic';
+                const allSorted = getAllHabitsSorted();
+                const maxOrder = allSorted.length > 0 ? Math.max(...allSorted.map(h => h.order)) : 0;
+                const newId = 'h_' + Date.now();
+                const newHabit = {
+                    id: newId,
+                    name: name.trim(),
+                    type: type,
+                    order: maxOrder + 1,
+                };
+                if (type === 'periodic') {
+                    newHabit.defaultScheduled = false;
+                }
+                appData.habits.push(newHabit);
+                saveData();
+                renderAll();
+                renderHabitEditList();
+                showToast('已添加新习惯：' + name.trim());
+            }
+
+            function escapeHTML(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ==================== 事件处理 ====================
+            function handleCellClick(e) {
+                const cell = e.target.closest('.check-cell');
+                if (!cell) return;
+                const habitId = cell.dataset.habitId;
+                const dateStr = cell.dataset.date;
+                const habit = appData.habits.find(h => h.id === habitId);
+                if (!habit) return;
+                cycleCellState(habit, dateStr);
+                if (navigator.vibrate) {
+                    navigator.vibrate(6);
+                }
+            }
+
+            let longPressTimer = null;
+            let longPressTriggered = false;
+            let touchStartTarget = null;
+
+            function handlePointerDown(e) {
+                const dateHeader = e.target.closest('.date-header');
+                if (dateHeader && dateHeader.dataset.date) {
+                    touchStartTarget = dateHeader;
+                    longPressTriggered = false;
+                    longPressTimer = setTimeout(() => {
+                        longPressTriggered = true;
+                        openNoteModal(dateHeader.dataset.date);
+                        if (navigator.vibrate) {
+                            navigator.vibrate([15, 40, 15]);
+                        }
+                    }, LONG_PRESS_MS);
+                }
+            }
+
+            function handlePointerUp(e) {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                if (longPressTriggered) {
+                    longPressTriggered = false;
+                    touchStartTarget = null;
+                    e.preventDefault();
+                }
+            }
+
+            function handlePointerMove(e) {
+                if (longPressTimer && touchStartTarget) {
+                    const currentTarget = document.elementFromPoint(e.clientX, e.clientY);
+                    if (!currentTarget || !currentTarget.closest('.date-header') ||
+                        currentTarget.closest('.date-header') !== touchStartTarget) {
+                        clearTimeout(longPressTimer);
+                        longPressTimer = null;
+                    }
+                }
+            }
+
+            function openNoteModal(dateStr) {
+                noteModalDate = dateStr;
+                $noteDateLabel.textContent = `日期：${dateStr}`;
+                $noteTextarea.value = appData.notes[dateStr] || '';
+                $btnDeleteNote.style.display = appData.notes[dateStr] ? 'inline-block' : 'none';
+                $noteModal.style.display = 'flex';
+                setTimeout(() => {
+                    $noteTextarea.focus();
+                }, 250);
+            }
+
+            function closeNoteModal() {
+                $noteModal.style.display = 'none';
+                noteModalDate = null;
+                $noteTextarea.value = '';
+            }
+
+            function saveNote() {
+                if (!noteModalDate) return;
+                const text = $noteTextarea.value.trim();
+                if (text) {
+                    appData.notes[noteModalDate] = text;
+                } else {
+                    delete appData.notes[noteModalDate];
+                }
+                saveData();
+                renderAll();
+                closeNoteModal();
+                showToast(text ? '备注已保存' : '备注已清除');
+            }
+
+            function deleteNote() {
+                if (!noteModalDate) return;
+                delete appData.notes[noteModalDate];
+                saveData();
+                renderAll();
+                closeNoteModal();
+                showToast('备注已删除');
+            }
+
+            function openSettings() {
+                $settingsPanel.classList.add('open');
+                $settingsBackdrop.classList.add('open');
+                renderHabitEditList();
+                $colorDone.value = appData.settings.doneColor;
+                $colorUndone.value = appData.settings.undoneColor;
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeSettings() {
+                $settingsPanel.classList.remove('open');
+                $settingsBackdrop.classList.remove('open');
+                document.body.style.overflow = '';
+                appData.settings.doneColor = $colorDone.value;
+                appData.settings.undoneColor = $colorUndone.value;
+                applyColors();
+                saveData();
+                renderAll();
+            }
+
+            function goToPrevMonth() {
+                if (currentMonth === 1) {
+                    currentYear--;
+                    currentMonth = 12;
+                } else {
+                    currentMonth--;
+                }
+                renderAll();
+                if ($tableWrapper) $tableWrapper.scrollLeft = 0;
+            }
+
+            function goToNextMonth() {
+                if (currentMonth === 12) {
+                    currentYear++;
+                    currentMonth = 1;
+                } else {
+                    currentMonth++;
+                }
+                renderAll();
+                if ($tableWrapper) $tableWrapper.scrollLeft = 0;
+            }
+
+            function goToToday() {
+                const now = new Date();
+                currentYear = now.getFullYear();
+                currentMonth = now.getMonth() + 1;
+                renderAll();
+                setTimeout(() => scrollToToday(), 250);
+                showToast('已回到本月');
+            }
+
+            let swipeStartX = 0;
+            let swipeStartY = 0;
+
+            function handleMonthNavTouchStart(e) {
+                swipeStartX = e.touches[0].clientX;
+                swipeStartY = e.touches[0].clientY;
+            }
+
+            function handleMonthNavTouchEnd(e) {
+                const dx = e.changedTouches[0].clientX - swipeStartX;
+                const dy = e.changedTouches[0].clientY - swipeStartY;
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
+                    if (dx > 0) {
+                        goToPrevMonth();
+                    } else {
+                        goToNextMonth();
+                    }
+                }
+            }
+
+            let toastTimer = null;
+
+            function showToast(msg) {
+                $toast.textContent = msg;
+                $toast.classList.add('show');
+                if (toastTimer) clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    $toast.classList.remove('show');
+                }, 1800);
+            }
+
+            // ==================== 事件绑定 ====================
+            $tableBody.addEventListener('click', handleCellClick);
+            $tableFoot.addEventListener('click', handleCellClick);
+
+            $tableHead.addEventListener('pointerdown', handlePointerDown);
+            $tableHead.addEventListener('pointerup', handlePointerUp);
+            $tableHead.addEventListener('pointermove', handlePointerMove);
+            $tableHead.addEventListener('pointerleave', () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+            });
+            $tableHead.addEventListener('touchstart', function(e) {
+                const dateHeader = e.target.closest('.date-header');
+                if (dateHeader && dateHeader.dataset.date) {
+                    touchStartTarget = dateHeader;
+                    longPressTriggered = false;
+                    longPressTimer = setTimeout(() => {
+                        longPressTriggered = true;
+                        openNoteModal(dateHeader.dataset.date);
+                        if (navigator.vibrate) navigator.vibrate([15, 40, 15]);
+                    }, LONG_PRESS_MS);
+                }
+            }, { passive: false });
+            $tableHead.addEventListener('touchend', function() {
+                if (longPressTimer) { clearTimeout(longPressTimer);
+                    longPressTimer = null; }
+                if (longPressTriggered) { longPressTriggered = false;
+                    touchStartTarget = null; }
+            });
+            $tableHead.addEventListener('touchmove', function() {
+                if (longPressTimer) { clearTimeout(longPressTimer);
+                    longPressTimer = null; }
+            }, { passive: false });
+            $tableHead.addEventListener('click', function(e) {
+                if (longPressTriggered) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    longPressTriggered = false;
+                }
+            });
+
+            $btnSaveNote.addEventListener('click', saveNote);
+            $btnCancelNote.addEventListener('click', closeNoteModal);
+            $btnDeleteNote.addEventListener('click', deleteNote);
+            $noteModal.addEventListener('click', function(e) {
+                if (e.target === $noteModal) closeNoteModal();
+            });
+
+            $btnSettings.addEventListener('click', openSettings);
+            $btnCloseSettings.addEventListener('click', closeSettings);
+            $settingsBackdrop.addEventListener('click', closeSettings);
+            $btnAddHabit.addEventListener('click', addNewHabit);
+            $btnResetData.addEventListener('click', resetData);
+            $colorDone.addEventListener('change', function() {
+                appData.settings.doneColor = this.value;
+                applyColors();
+                saveData();
+                renderAll();
+            });
+            $colorUndone.addEventListener('change', function() {
+                appData.settings.undoneColor = this.value;
+                applyColors();
+                saveData();
+                renderAll();
+            });
+
+            // 导出 / 导入事件
+            document.getElementById('btnExportData').addEventListener('click', exportData);
+            document.getElementById('btnImportData').addEventListener('click', importData);
+            document.getElementById('fileInput').addEventListener('change', function(e) {
+                if (this.files && this.files.length > 0) {
+                    handleFileImport(this.files[0]);
+                    this.value = ''; // 清空以便重复选择同一个文件
+                }
+            });
+
+            $btnPrevMonth.addEventListener('click', goToPrevMonth);
+            $btnNextMonth.addEventListener('click', goToNextMonth);
+            $btnToday.addEventListener('click', goToToday);
+            $monthNav.addEventListener('touchstart', handleMonthNavTouchStart, { passive: true });
+            $monthNav.addEventListener('touchend', handleMonthNavTouchEnd, { passive: true });
+
+            // 底部导航按钮
+            $bottomBtnToday.addEventListener('click', function() {
+                setBottomNavActive(this);
+                goToToday();
+            });
+            $bottomBtnStats.addEventListener('click', function() {
+                setBottomNavActive(this);
+                scrollToStats();
+            });
+            $bottomBtnNote.addEventListener('click', function() {
+                setBottomNavActive(this);
+                const todayStrActual = getTodayStr();
+                openNoteModal(todayStrActual);
+            });
+            $bottomBtnSettings.addEventListener('click', function() {
+                setBottomNavActive(this);
+                openSettings();
+            });
+
+            function setBottomNavActive(activeBtn) {
+                document.querySelectorAll('.bottom-nav-btn').forEach(b => b.classList.remove('active'));
+                if (activeBtn) activeBtn.classList.add('active');
+            }
+
+            // 今日进度条点击
+            $todayProgressBar.addEventListener('click', function() {
+                scrollToToday();
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft' && !e.target.closest('input,textarea,select')) {
+                    goToPrevMonth();
+                } else if (e.key === 'ArrowRight' && !e.target.closest('input,textarea,select')) {
+                    goToNextMonth();
+                } else if (e.key === 'Escape') {
+                    if ($noteModal.style.display === 'flex') closeNoteModal();
+                    if ($settingsPanel.classList.contains('open')) closeSettings();
+                }
+            });
+
+            $settingsPanel.addEventListener('touchmove', function(e) {
+                e.stopPropagation();
+            }, { passive: false });
+
+            // ==================== 初始化 ====================
+            function init() {
+                loadData();
+                const now = new Date();
+                currentYear = now.getFullYear();
+                currentMonth = now.getMonth() + 1;
+                todayStr = getTodayStr();
+                applyColors();
+                renderAll();
+                setTimeout(() => scrollToToday(), 400);
+            }
+
+            init();
+            console.log('✅ 习惯追踪APP已就绪 (支持导出/导入备份)');
+            console.log('  📤 设置 → 数据管理 → 导出数据 即可备份');
+            console.log('  📥 换浏览器后，同样位置导入备份文件即可恢复');
+        })();
+    </script>
+</body>
+</html>
